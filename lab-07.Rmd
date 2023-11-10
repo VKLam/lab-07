@@ -10,7 +10,7 @@ output: html_document
 ```{r load-packages, message=FALSE, echo=TRUE}
 library(tidyverse)
 library(tidymodels)
-
+library(ggplot2)
 ```
 
 
@@ -25,58 +25,78 @@ evals<-read.csv("data/evals.csv", row.names=1)
 
 ```{r viz-score}
 # add code here
+score_viz <- evals %>% ggplot(aes(x = score)) +
+          geom_histogram(binwidth = 0.2) + 
+          geom_freqpoly(binwidth = 0.2)
+score_viz
+
+sum_score <- evals %>% summarise( 
+    mean_score = mean(score, na.rm = TRUE),
+    median_score = median(score, na.rm = TRUE)
+  )
+
+sum_score
 ```
 
-*Add your other details and narratives here.*
+The distribution of the histogram can be seen as left-skewed (negatively skewed). To support this, note that a left-skewed distribution will have the median value being greater than the mean value, given that the mean score (4.175 to 3dp) is less than the median score (4.3) it suffice to say that the distribution of scores is left-skewed.
 
 2.  Visualize and describe the relationship between `score` and `bty_avg` using `geom_point()` to represent the data. 
 
 ```{r scatterplot}
-# add code here
+bty_avg_vs_score_point <- evals %>% ggplot(aes(y = score, x = bty_avg)) +
+                  geom_point()
+
+bty_avg_vs_score <- evals %>% ggplot(aes(y = score, x = bty_avg)) +
+                  geom_jitter()
+
+bty_avg_vs_score_point
+bty_avg_vs_score
 ```
 
-*Add your narrative and other details here.*
+Given that that bty_avg is an average, using only geom_point will make the variables of the data seem discrete but that is not the case. Geom_jitter adds some randomness in order to make data visualisation more appropriate.
 
 # Exercise 2: Simple Linear regression with a numerical predictor
 
 1. Fit a linear model called `score_bty_fit` to predict average professor evaluation `score` from average beauty rating (`bty_avg`). Print the regression output using `tidy()`.
 
-```{r fit-score_bty_fit, eval = FALSE}
+```{r fit-score_bty_fit}
 # remove eval = FALSE from the code chunk options after filling in the blanks
 score_bty_fit <- linear_reg() %>%
   set_engine("lm") %>%
-  fit(___ ~ ___, data = ___)
+  fit(score ~ bty_avg, data = evals)
 ```
 
-```{r tidy-score_bty_fit, eval = FALSE}
+```{r tidy-score_bty_fit}
 # remove eval = FALSE from the code chunk options after filling in the blanks
-tidy(___)
+tidy(score_bty_fit)
 ```
 
-*Add your linear model here. Don't worry too much about notation, you can use things like score-hat.*
+score = 3.88 + 0.0666*bty_avg
 
 2. Plot the data again using `geom_jitter()`, and add the regression line.
 
 ```{r viz-score_bty_fit,eval=FALSE}
-# add your plot here. Hint, you can add the regression line using geom_smooth()
+bty_avg_vs_score2 <- evals %>% ggplot(aes(y = score, x = bty_avg)) +
+                  geom_jitter() + geom_smooth(method = lm)
+bty_avg_vs_score2
 ```
 
 3. Interpret the slope of the linear model in context of the data.
 
-*Add your interpretation here*
+For every increase in one unit of bty_avg, the score increases by 6.66% (to 3sf).
 
 4. Interpret the intercept of the linear model in context of the data. Comment on whether or not the intercept makes sense in this context.
 
-*Add your interpretation here*
+When the bty_avg = 0, the score is 3.88 (to 3sf) The intercept doesn't make sense in this context because there are no score values with 0 for a bty_avg.
 
 5. Determine the $R^2$ of the model and interpret it in the context of the data.
 
 ```{r R2, eval = FALSE}
 # remove eval = FALSE from the code chunk options after filling in the blanks
-glance(___)$___
+glance(score_bty_fit)$r.squared
 ```
 
-*Add your interpretation here*
+Given that the value found for R^2 is close to 0, it is suffice to say that the explanatory variable/predictor (bty_avg) has very little correlation to the response variable (score), i.e. bty_avg seems to not play a big factor in the result of the score.
 
 6. Make a plot of residuals vs. predicted values for the model above.
 
@@ -84,7 +104,10 @@ glance(___)$___
 # remove eval = FALSE from the code chunk options after filling in the blanks
 score_bty_aug <- augment(score_bty_fit$fit)
 
-ggplot(___) + ...
+ggplot(score_bty_aug, aes(x =.fitted, y = .resid)) + 
+        geom_jitter() +
+        geom_hline(aes(yintercept = 0),linetype = "dashed")
+
 ```
 
 # Exercise 3: Simple Linear regression with a categorical predictor
